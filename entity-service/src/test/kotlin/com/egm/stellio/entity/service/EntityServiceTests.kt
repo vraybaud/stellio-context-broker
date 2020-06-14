@@ -314,7 +314,7 @@ class EntityServiceTests {
         every { neo4jRepository.hasRelationshipOfType(any(), any()) } returns true
         every { neo4jRepository.getRelationshipOfSubject(any(), any()) } returns mockkedRelationship
         every { neo4jRepository.getRelationshipTargetOfSubject(any(), any()) } returns mockkedRelationshipTarget
-        every { neo4jRepository.updateRelationshipTargetOfAttribute(any(), any(), any(), any()) } returns Pair(1, 1)
+        every { neo4jRepository.updateRelationshipTargetOfAttribute(any(), any(), any(), any()) } returns 1
         every { entityRepository.findById(any()) } returns Optional.of(mockkedSensor)
         every { relationshipRepository.save(any<Relationship>()) } returns mockkedRelationship
         every { repositoryEventsListener.handleRepositoryEvent(any()) } just Runs
@@ -468,7 +468,10 @@ class EntityServiceTests {
 
         entityService.createEntityProperty(mockkedEntity, "temperature", temperatureMap)
 
-        verify { neo4jRepository.createPropertyOfSubject(eq(entityId), match {
+        verify { neo4jRepository.createPropertyOfSubject(match {
+            it.id == entityId &&
+                it.label == "Entity"
+        }, match {
             it.name == "temperature" &&
                 it.value == 250 &&
                 it.unitCode == "kg" &&
@@ -512,9 +515,20 @@ class EntityServiceTests {
 
         entityService.appendEntityAttributes(entityId, expandedNewRelationship, false)
 
-        verify { neo4jRepository.hasRelationshipOfType(eq(entityId), "CONNECTS_TO") }
+        verify { neo4jRepository.hasRelationshipOfType(
+            match {
+                it.id == entityId &&
+                    it.label == "Entity"
+            }, "CONNECTS_TO")
+        }
         verify { entityRepository.findById(eq(entityId)) }
-        verify { neo4jRepository.createRelationshipOfSubject(eq(entityId), any(), eq(targetEntityId)) }
+        verify {
+            neo4jRepository.createRelationshipOfSubject(
+                match {
+                    it.id == entityId &&
+                        it.label == "Entity"
+                }, any(), eq(targetEntityId))
+        }
 
         confirmVerified()
     }
@@ -541,7 +555,12 @@ class EntityServiceTests {
 
         entityService.appendEntityAttributes(entityId, expandedNewRelationship, true)
 
-        verify { neo4jRepository.hasRelationshipOfType(eq(entityId), "CONNECTS_TO") }
+        verify { neo4jRepository.hasRelationshipOfType(
+            match {
+                it.id == entityId &&
+                    it.label == "Entity"
+            }, "CONNECTS_TO")
+        }
 
         confirmVerified()
     }
@@ -580,7 +599,12 @@ class EntityServiceTests {
 
         entityService.appendEntityAttributes(entityId, expandedNewRelationship, false)
 
-        verify { neo4jRepository.hasRelationshipOfType(eq(entityId), "CONNECTS_TO") }
+        verify { neo4jRepository.hasRelationshipOfType(
+            match {
+                it.id == entityId &&
+                    it.label == "Entity"
+            }, "CONNECTS_TO")
+        }
         verify { neo4jRepository.deleteEntityRelationship(eq(entityId), "CONNECTS_TO") }
         verify { entityRepository.findById(eq(entityId)) }
 
@@ -617,12 +641,26 @@ class EntityServiceTests {
 
         entityService.appendEntityAttributes(entityId, expandedNewProperty, false)
 
-        verify { neo4jRepository.hasPropertyOfName(eq(entityId), "https://ontology.eglobalmark.com/aquac#fishNumber") }
+        verify {
+            neo4jRepository.hasPropertyOfName(
+                match {
+                    it.id == entityId &&
+                        it.label == "Entity"
+                },
+                "https://ontology.eglobalmark.com/aquac#fishNumber"
+            )
+        }
         verify { entityRepository.findById(eq(entityId)) }
-        verify { neo4jRepository.createPropertyOfSubject(eq(entityId), match {
-            it.value == 500 &&
-                it.name == "https://ontology.eglobalmark.com/aquac#fishNumber"
-        }) }
+        verify { neo4jRepository.createPropertyOfSubject(
+            match {
+                it.id == entityId &&
+                    it.label == "Entity"
+            },
+            match {
+                it.value == 500 &&
+                    it.name == "https://ontology.eglobalmark.com/aquac#fishNumber"
+            })
+        }
         verify { neo4jRepository.updateEntityModifiedDate(eq(entityId)) }
 
         confirmVerified()
@@ -818,7 +856,7 @@ class EntityServiceTests {
         every { mockkedRelationship.id } returns relationshipId
         every { mockkedNotification.id } returns notificationId
         every { mockkedLastNotification.id } returns lastNotificationId
-        every { neo4jRepository.updateRelationshipTargetOfAttribute(any(), any(), any(), any()) } returns Pair(1, 1)
+        every { neo4jRepository.updateRelationshipTargetOfAttribute(any(), any(), any(), any()) } returns 1
         every { relationshipRepository.save<Relationship>(any()) } returns mockkedRelationship
         every { neo4jRepository.deleteEntity(any()) } returns Pair(1, 1)
 
